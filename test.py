@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget, QDialog, QHBoxLayout, QPushButton, QSizePolicy, QMenu
+from PySide6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget, QDialog, QHBoxLayout, QPushButton, QSizePolicy
 from PySide6.QtGui import QPixmap
 from PySide6.QtCore import Qt, QPoint
 import sys
@@ -43,25 +43,37 @@ class MainWindow(QMainWindow):
             self.drag_position = None
 
     def show_context_menu(self, position: QPoint):
-        context_menu = QMenu(self)
+        context_menu_widget = QWidget()
+        context_menu_layout = QHBoxLayout()
 
-        loja_action = context_menu.addAction("Shop")
-        loja_action.triggered.connect(self.show_loja)
-        status_action = context_menu.addAction("Status")
-        status_action.triggered.connect(self.show_status)
-        interagir_action = context_menu.addAction("Interact")
-        interagir_action.triggered.connect(self.show_interagir)
-        diy_action = context_menu.addAction("DIY")
-        diy_action.triggered.connect(self.show_diy)
-        sistema_action = context_menu.addAction("System")
-        sistema_action.triggered.connect(self.show_sistema)
+        loja_button = QPushButton("Shop")
+        loja_button.clicked.connect(self.show_loja)
+        status_button = QPushButton("Status")
+        status_button.clicked.connect(self.show_status)
+        interagir_button = QPushButton("Interact")
+        interagir_button.clicked.connect(self.show_interagir)
+        diy_button = QPushButton("DIY")
+        diy_button.clicked.connect(self.show_diy)
+        sistema_button = QPushButton("System")
+        sistema_button.clicked.connect(self.show_sistema)
 
-        # Obtém a posição da parte inferior centralizada da janela
-        global_position = self.mapToGlobal(self.rect().bottomLeft())
-        global_position.setX(global_position.x() + self.rect().width() / 2 - context_menu.sizeHint().width() / 2)
+        context_menu_layout.addWidget(loja_button)
+        context_menu_layout.addWidget(status_button)
+        context_menu_layout.addWidget(interagir_button)
+        context_menu_layout.addWidget(diy_button)
+        context_menu_layout.addWidget(sistema_button)
 
-        # Exibe o menu na posição calculada
-        context_menu.exec(global_position)
+        context_menu_widget.setLayout(context_menu_layout)
+        context_menu_widget.setWindowFlags(Qt.Popup)
+
+        # Calcula a posição para centralizar o menu na parte inferior da imagem
+        label_rect = self.label.rect()
+        global_position = self.label.mapToGlobal(label_rect.bottomLeft())
+        global_position.setX(global_position.x() + label_rect.width() / 2 - context_menu_widget.sizeHint().width() / 2)
+        global_position.setY(global_position.y())
+
+        context_menu_widget.move(global_position)
+        context_menu_widget.show()
 
     def show_loja(self):
         self.open_dialog("Shop")

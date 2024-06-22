@@ -1,4 +1,3 @@
-# shop.py
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QMessageBox
 import sqlite3
 
@@ -19,23 +18,7 @@ class ShopDialog(QDialog):
         # Conectar ao banco de dados
         self.conn = sqlite3.connect("inventory.db")
         self.cursor = self.conn.cursor()
-        
-        # Criar tabelas se não existirem
-        self.cursor.executescript("""
-            CREATE TABLE IF NOT EXISTS items (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                description TEXT,
-                price INTEGER
-            );
 
-            CREATE TABLE IF NOT EXISTS inventory (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                item_id INTEGER,
-                FOREIGN KEY (item_id) REFERENCES items(id)
-            );
-        """)
-        
         # Adicionar itens à loja
         for item in self.items:
             item_label = QLabel(f"{item['name']}: {item['description']} - Price: ${item['price']}")
@@ -45,6 +28,18 @@ class ShopDialog(QDialog):
             layout.addWidget(buy_button)
         
         self.setLayout(layout)
+
+        # Popula a tabela items no banco de dados se estiver vazia
+        self.populate_items()
+
+    def populate_items(self):
+        self.cursor.execute("SELECT COUNT(*) FROM items")
+        count = self.cursor.fetchone()[0]
+        if count == 0:
+            for item in self.items:
+                self.cursor.execute("INSERT INTO items (name, description, price) VALUES (?, ?, ?)", 
+                                    (item['name'], item['description'], item['price']))
+            self.conn.commit()
     
     def buy_item(self, item):
         try:
@@ -59,14 +54,16 @@ class ShopDialog(QDialog):
             self.cursor.execute("UPDATE player SET money = ?", (new_money,))
             
             # Adicionar o item ao inventário do jogador
-            self.cursor.execute("INSERT INTO inventory (item_id) VALUES (?)", (item['id'],))
+            self.cursor.execute("SELECT id FROM items WHERE name = ?", (item['name'],))
+            item_id = self.cursor.fetchone()[0]
+            self.cursor.execute("INSERT INTO inventory (item_id) VALUES (?)", (item_id,))
             self.conn.commit()
             
             QMessageBox.information(self, "Purchase Successful", f"You have bought {item['name']}!")
         
         except Exception as e:
             QMessageBox.critical(self, "Error", str(e))
-            
+    
     def get_money(self):
         self.cursor.execute("SELECT money FROM player")
         money = self.cursor.fetchone()
